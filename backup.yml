@@ -1,0 +1,31 @@
+---
+# Playbook to back up the /etc/myapp directory to AWS S3.
+
+- name: Backup /etc/myapp to AWS S3
+  # Defines the play name, indicating its purpose.
+  hosts: localhost
+  # Specifies that the play will run on the local machine (localhost).
+  tasks:
+    # The list of tasks to be executed.
+
+    - name: Compress /etc/myapp directory
+      # Task to compress the directory into a tarball.
+      archive:
+        path: /etc/myapp
+        # Source directory that will be compressed.
+        dest: /tmp/myapp_backup.tar.gz
+        # Destination path for the compressed tarball in the /tmp directory.
+
+    - name: Upload tarball to AWS S3
+      # Task to upload the tarball to an S3 bucket.
+      aws_s3:
+        bucket: my-app-backups
+        # Name of the S3 bucket where the backup will be stored.
+        object: backups/myapp_backup_{{ ansible_date_time.iso8601 }}.tar.gz
+        # Specifies the object key (file path) in the S3 bucket. It includes the current date and time in ISO 8601 format to make the filename unique.
+        src: /tmp/myapp_backup.tar.gz
+        # The source file (the tarball) to be uploaded.
+        mode: put
+        # Specifies that this operation is a 'put' (upload) to the S3 bucket.
+      delegate_to: localhost
+      # Ensures the upload is performed from the localhost.

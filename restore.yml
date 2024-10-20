@@ -1,0 +1,41 @@
+---
+- name: Restore files from S3 bucket to local
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Ensure the restore directory exists
+      file:
+        path: /home/niran/restore  
+        # Specify the path for the restore directory
+        state: directory  
+        # Ensure the directory is created if it doesn't exist
+
+    - name: List objects in the S3 bucket
+      amazon.aws.s3_object:
+        bucket: my-app-backups  
+        # Specify the S3 bucket to list objects from
+        mode: list  
+        # Set the mode to list objects
+      register: s3_objects  
+      # Register the output to use in later tasks
+
+    - name: Debug full S3 objects output
+      debug:
+        var: s3_objects  
+        # Display the full output of the S3 objects for debugging purposes
+
+    - name: Download files from S3 bucket to local
+      amazon.aws.s3_object:
+        bucket: my-app-backups  
+        # Specify the S3 bucket to download files from
+        object: "{{ item }}"  
+        # Use the item from the loop to specify the object to download
+        dest: "/home/niran/restore/{{ item | basename }}"  
+        # Set the destination for downloaded files
+        mode: get  
+        # Set the mode to download files
+      loop: "{{ s3_objects.s3_keys }}"  
+      # Loop through the keys of the S3 objects
+      when: s3_objects.s3_keys is defined and s3_objects.s3_keys | length > 0  
+      # Only run if there are keys available
